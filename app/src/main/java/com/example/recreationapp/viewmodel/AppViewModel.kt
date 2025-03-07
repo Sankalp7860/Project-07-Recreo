@@ -23,9 +23,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val activities: LiveData<List<ActivityRecord>> = _activities
 
     init {
-        auth.currentUser?.let {
-            _user.value = User(it.uid, it.email ?: "", it.email == "admin@example.com")
-            loadActivities(it.uid)
+        auth.currentUser?.let { firebaseUser ->
+            _user.value = User(firebaseUser.uid, firebaseUser.email ?: "", firebaseUser.email == "admin@example.com")
+            loadActivities(firebaseUser.uid)
         }
     }
 
@@ -43,7 +43,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         onComplete(false)
                     }
                 }
-                .addOnFailureListener {
+                .addOnFailureListener { exception ->
                     auth.createUserWithEmailAndPassword(email, password)
                         .addOnSuccessListener { result ->
                             val firebaseUser = result.user
@@ -86,7 +86,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    // Handle error if needed
+                    // Handle error if needed (e.g., log it)
                 }
             })
     }

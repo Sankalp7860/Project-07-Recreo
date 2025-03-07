@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "185748298286",
+    "project_id": "recreo-c2c3a",
+    "storage_bucket": "recreo-c2c3a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:185748298286:android:1dd0f217180b25afb41dbf",
+        "android_client_info": {
+          "package_name": "com.example.recreationapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUw7_zabXjNaSIrizuTQUkxEHQIb3n7FY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
