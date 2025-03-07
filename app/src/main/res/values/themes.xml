@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.RecreationApp" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Customize if needed -->
+    </style>
+</resources>

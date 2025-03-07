@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "915151520694",
+    "project_id": "recreationapp-8cdad",
+    "storage_bucket": "recreationapp-8cdad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:915151520694:android:bda71c1f6477276c0f7717",
+        "android_client_info": {
+          "package_name": "com.example.recreationapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQ3RiQ_nbP0QpGJSG7r8vX6r7abZy0WYI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
