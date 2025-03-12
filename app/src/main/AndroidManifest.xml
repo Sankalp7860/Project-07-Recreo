@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.recreationapp">
 
+    <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
@@ -13,24 +14,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Black.NoTitleBar">
-        <activity
-            android:name=".ui.NewsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.CommunityActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.JournalActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.DrawingActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.MusicActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.MainActivity"
-            android:exported="false" />
+
+        <!-- Login Activity (Launcher) -->
         <activity
             android:name=".ui.LoginActivity"
             android:exported="true">
@@ -39,5 +24,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Register Activity -->
+        <activity
+            android:name=".ui.RegisterActivity"
+            android:exported="false" />
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="false" />
+
+        <!-- Other Activities from MainActivity -->
+        <activity
+            android:name=".ui.MusicActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.DrawingActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.JournalActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.CommunityActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.NewsActivity"
+            android:exported="false" />
     </application>
 </manifest>

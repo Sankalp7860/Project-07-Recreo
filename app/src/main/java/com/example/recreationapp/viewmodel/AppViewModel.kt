@@ -29,7 +29,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun login(email: String, password: String, onComplete: (Boolean) -> Unit) {
+    // Login function (only signs in existing users)
+    fun login(email: String, password: String, onComplete: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
@@ -38,23 +39,32 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         val user = User(firebaseUser.uid, email, email == "admin@example.com")
                         _user.value = user
                         loadActivities(user.uid)
-                        onComplete(true)
+                        onComplete(true, null) // Success, no error message
                     } else {
-                        onComplete(false)
+                        onComplete(false, "Login failed: User not found")
                     }
                 }
                 .addOnFailureListener { exception ->
-                    auth.createUserWithEmailAndPassword(email, password)
-                        .addOnSuccessListener { result ->
-                            val firebaseUser = result.user
-                            if (firebaseUser != null) {
-                                val user = User(firebaseUser.uid, email, email == "admin@example.com")
-                                _user.value = user
-                                loadActivities(user.uid)
-                                onComplete(true)
-                            }
-                        }
-                        .addOnFailureListener { onComplete(false) }
+                    onComplete(false, exception.message) // Failure with error message
+                }
+        }
+    }
+
+    // Register function (creates a new user)
+    fun register(email: String, password: String, onComplete: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener { result ->
+                    val firebaseUser = result.user
+                    if (firebaseUser != null) {
+                        val user = User(firebaseUser.uid, email, email == "admin@example.com")
+                        _user.value = user
+                        loadActivities(user.uid)
+                        onComplete(true, null) // Success, no error message
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    onComplete(false, exception.message) // Failure with error message
                 }
         }
     }
@@ -86,7 +96,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 override fun onCancelled(error: DatabaseError) {
-                    // Handle error if needed (e.g., log it)
+                    // Handle error if needed
                 }
             })
     }
