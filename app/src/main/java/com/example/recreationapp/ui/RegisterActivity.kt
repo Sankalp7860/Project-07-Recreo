@@ -14,19 +14,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.recreationapp.viewmodel.AppViewModel
 
-class LoginActivity : ComponentActivity() {
+class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                LoginScreen()
+                RegisterScreen()
             }
         }
     }
 }
 
 @Composable
-fun LoginScreen(viewModel: AppViewModel = viewModel()) {
+fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -59,26 +59,26 @@ fun LoginScreen(viewModel: AppViewModel = viewModel()) {
         }
         Button(
             onClick = {
-                viewModel.login(email, password) { success, error ->
+                viewModel.register(email, password) { success, error ->
                     if (success) {
                         context.startActivity(Intent(context, MainActivity::class.java))
                         (context as? ComponentActivity)?.finish()
                     } else {
-                        errorMessage = error ?: "Login failed"
+                        errorMessage = error ?: "Registration failed"
                     }
                 }
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Login")
+            Text("Register")
         }
         Spacer(modifier = Modifier.height(16.dp))
         TextButton(
             onClick = {
-                context.startActivity(Intent(context, RegisterActivity::class.java))
+                context.startActivity(Intent(context, LoginActivity::class.java))
             }
         ) {
-            Text("Don't have an account? Register")
+            Text("Already have an account? Login")
         }
     }
 }
