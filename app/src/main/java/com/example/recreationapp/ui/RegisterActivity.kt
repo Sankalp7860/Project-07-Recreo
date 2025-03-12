@@ -2,6 +2,7 @@ package com.example.recreationapp.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -25,11 +26,13 @@ class RegisterActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
@@ -41,16 +44,30 @@ fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White
+            )
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,      // Text color when field is focused
-                unfocusedTextColor = Color.White,    // Text color when field is not focused
-                focusedLabelColor = Color.White,     // Label color when focused
-                unfocusedLabelColor = Color.Gray,    // Label color when not focused
-                cursorColor = Color.White            // Cursor color
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -60,26 +77,41 @@ fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,      // Text color when field is focused
-                unfocusedTextColor = Color.White,    // Text color when field is not focused
-                focusedLabelColor = Color.White,     // Label color when focused
-                unfocusedLabelColor = Color.Gray,    // Label color when not focused
-                cursorColor = Color.White            // Cursor color
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
-        errorMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+
         Button(
             onClick = {
-                viewModel.register(email, password) { success, error ->
-                    if (success) {
-                        context.startActivity(Intent(context, MainActivity::class.java))
-                        (context as? ComponentActivity)?.finish()
-                    } else {
-                        errorMessage = error ?: "Registration failed"
+                when {
+                    name.isBlank() -> {
+                        errorMessage = "Name cannot be empty"
+                        showErrorDialog = true
+                    }
+                    email.isBlank() -> {
+                        errorMessage = "Email cannot be empty"
+                        showErrorDialog = true
+                    }
+                    password.length < 6 -> {
+                        errorMessage = "Password must be at least 6 characters"
+                        showErrorDialog = true
+                    }
+                    else -> {
+                        Log.d("RegisterScreen", "Calling register with: $email, $name")
+                        viewModel.register(email, password, name) { success, error ->
+                            Log.d("RegisterScreen", "Register callback: success=$success, error=$error")
+                            if (success) {
+                                showSuccessDialog = true
+                            } else {
+                                errorMessage = error
+                                showErrorDialog = true
+                            }
+                        }
                     }
                 }
             },
@@ -95,5 +127,35 @@ fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
         ) {
             Text("Already have an account? Login")
         }
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text("Success") },
+            text = { Text("Registration successful!") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSuccessDialog = false
+                    context.startActivity(Intent(context, MainActivity::class.java))
+                    (context as? ComponentActivity)?.finish()
+                }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            title = { Text("Error") },
+            text = { Text(errorMessage ?: "Unknown error") },
+            confirmButton = {
+                TextButton(onClick = { showErrorDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }
