@@ -1,5 +1,7 @@
 package com.example.recreationapp.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -111,7 +113,9 @@ data class VolumeInfo(
     val publishedDate: String? = null,
     val categories: List<String> = emptyList(),
     val averageRating: Float? = null,
-    val pageCount: Int? = null
+    val pageCount: Int? = null,
+    val previewLink: String? = null, // Added for "Read Sample"
+    val infoLink: String? = null     // Added for "Buy Book"
 )
 
 @Serializable
@@ -224,7 +228,8 @@ fun BooksScreen(onBookSelected: (String) -> Unit) {
                     IconButton(onClick = {
                         if (searchQuery.isNotEmpty()) {
                             coroutineScope.launch {
-                                books = fetchBooks(searchQuery)
+                                isLoading = true
+                                books = fetchBooks(query = searchQuery)
                                 isLoading = false
                                 Log.d("BooksScreen", "Search fetch complete, books size: ${books.size}")
                             }
@@ -515,6 +520,7 @@ fun BookDetailScreen(bookId: String, onBackPressed: () -> Unit) {
 @Composable
 fun BookDetailContent(book: BookItem) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -522,7 +528,20 @@ fun BookDetailContent(book: BookItem) {
             .verticalScroll(scrollState)
     ) {
         BookHeaderSection(book)
-        BookActionButtons()
+        BookActionButtons(
+            onReadSample = {
+                book.volumeInfo.previewLink?.let { link ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                    context.startActivity(intent)
+                } ?: Toast.makeText(context, "No preview available", Toast.LENGTH_SHORT).show()
+            },
+            onBuyBook = {
+                book.volumeInfo.infoLink?.let { link ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
+                    context.startActivity(intent)
+                } ?: Toast.makeText(context, "No purchase link available", Toast.LENGTH_SHORT).show()
+            }
+        )
         BookDescriptionSection(book)
         BookDetailsSection(book)
         SimilarBooksSection()
@@ -614,7 +633,7 @@ fun BookHeaderSection(book: BookItem) {
 }
 
 @Composable
-fun BookActionButtons() {
+fun BookActionButtons(onReadSample: () -> Unit, onBuyBook: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -622,7 +641,7 @@ fun BookActionButtons() {
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         Button(
-            onClick = { /* Read sample functionality */ },
+            onClick = onReadSample,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
@@ -637,7 +656,7 @@ fun BookActionButtons() {
         Spacer(modifier = Modifier.width(16.dp))
 
         Button(
-            onClick = { /* Purchase functionality */ },
+            onClick = onBuyBook,
             modifier = Modifier.weight(1f)
         ) {
             Icon(
