@@ -55,8 +55,12 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
             Text("Community Sharing")
         }
         Button(onClick = { context.startActivity(Intent(context, NewsActivity::class.java)) }) {
-            Text("Funny News & Memes")
+            Text("Books")
         }
+//        Button(onClick = { context.startActivity(Intent(context, BookActivity::class.java)) }) {
+//            Text("Books")
+//        }
+
         Spacer(modifier = Modifier.height(16.dp))
         LazyColumn {
             items(activities) { activity ->

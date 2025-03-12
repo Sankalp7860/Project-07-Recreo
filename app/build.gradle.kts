@@ -3,6 +3,7 @@ plugins {
     id("kotlin-android")
     id("com.google.gms.google-services") version "4.4.2"  // This is enough for Google Services
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" // For Jetpack Compose
+    id ("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -79,5 +80,20 @@ dependencies {
     implementation ("androidx.compose.material3:material3:1.2.0")
     implementation ("androidx.navigation:navigation-compose:2.7.5")
     implementation ("io.coil-kt:coil-compose:2.5.0")
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.0")
+    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation ("androidx.compose.material3:material3:1.3.0") // Or latest version
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation ("io.coil-kt:coil-compose:2.6.0") // For AsyncImage
+    implementation ("androidx.compose.material3:material3:1.3.0") // Or latest
+    implementation ("androidx.compose.foundation:foundation:1.7.0")
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation ("io.coil-kt:coil-compose:2.6.0")
 
 }
