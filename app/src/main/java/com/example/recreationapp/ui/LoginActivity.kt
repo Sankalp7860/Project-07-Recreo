@@ -2,6 +2,7 @@ package com.example.recreationapp.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -25,11 +26,12 @@ class LoginActivity : ComponentActivity() {
         }
     }
 }
-
 @Composable
 fun LoginScreen(viewModel: AppViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
@@ -46,11 +48,11 @@ fun LoginScreen(viewModel: AppViewModel = viewModel()) {
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,      // Text color when field is focused
-                unfocusedTextColor = Color.White,    // Text color when field is not focused
-                focusedLabelColor = Color.White,     // Label color when focused
-                unfocusedLabelColor = Color.Gray,    // Label color when not focused
-                cursorColor = Color.White            // Cursor color
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -60,26 +62,37 @@ fun LoginScreen(viewModel: AppViewModel = viewModel()) {
             label = { Text("Password") },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,      // Text color when field is focused
-                unfocusedTextColor = Color.White,    // Text color when field is not focused
-                focusedLabelColor = Color.White,     // Label color when focused
-                unfocusedLabelColor = Color.Gray,    // Label color when not focused
-                cursorColor = Color.White            // Cursor color
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.Gray,
+                cursorColor = Color.White
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
-        errorMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+
         Button(
             onClick = {
-                viewModel.login(email, password) { success, error ->
-                    if (success) {
-                        context.startActivity(Intent(context, MainActivity::class.java))
-                        (context as? ComponentActivity)?.finish()
-                    } else {
-                        errorMessage = error ?: "Login failed"
+                when {
+                    email.isBlank() -> {
+                        errorMessage = "Email cannot be empty"
+                        showErrorDialog = true
+                    }
+                    password.isBlank() -> {
+                        errorMessage = "Password cannot be empty"
+                        showErrorDialog = true
+                    }
+                    else -> {
+                        Log.d("LoginScreen", "Calling login with: $email")
+                        viewModel.login(email, password) { success, error ->
+                            Log.d("LoginScreen", "Login callback: success=$success, error=$error")
+                            if (success) {
+                                showSuccessDialog = true
+                            } else {
+                                errorMessage = error
+                                showErrorDialog = true
+                            }
+                        }
                     }
                 }
             },
@@ -95,5 +108,35 @@ fun LoginScreen(viewModel: AppViewModel = viewModel()) {
         ) {
             Text("Don't have an account? Register")
         }
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text("Success") },
+            text = { Text("Login successful!") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSuccessDialog = false
+                    context.startActivity(Intent(context, MainActivity::class.java))
+                    (context as? ComponentActivity)?.finish()
+                }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            title = { Text("Error") },
+            text = { Text(errorMessage ?: "Unknown error") },
+            confirmButton = {
+                TextButton(onClick = { showErrorDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }
