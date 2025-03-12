@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.google.gms.google.services) apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false // Add this if using direct declaration
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.8.20" apply false
+
 }
 
 buildscript {
