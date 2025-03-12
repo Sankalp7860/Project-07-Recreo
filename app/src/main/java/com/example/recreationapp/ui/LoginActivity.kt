@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,14 +44,28 @@ fun LoginScreen(viewModel: AppViewModel = viewModel()) {
             value = email,
             onValueChange = { email = it },
             label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,      // Text color when field is focused
+                unfocusedTextColor = Color.White,    // Text color when field is not focused
+                focusedLabelColor = Color.White,     // Label color when focused
+                unfocusedLabelColor = Color.Gray,    // Label color when not focused
+                cursorColor = Color.White            // Cursor color
+            )
         )
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,      // Text color when field is focused
+                unfocusedTextColor = Color.White,    // Text color when field is not focused
+                focusedLabelColor = Color.White,     // Label color when focused
+                unfocusedLabelColor = Color.Gray,    // Label color when not focused
+                cursorColor = Color.White            // Cursor color
+            )
         )
         Spacer(modifier = Modifier.height(16.dp))
         errorMessage?.let {
