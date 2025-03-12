@@ -29,7 +29,6 @@ class RegisterActivity : ComponentActivity() {
 fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
 
@@ -40,13 +39,6 @@ fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -67,18 +59,12 @@ fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
         }
         Button(
             onClick = {
-                if (name.isBlank()) {
-                    errorMessage = "Name cannot be empty"
-                } else if (email.isBlank() || password.isBlank()) {
-                    errorMessage = "Email and password cannot be empty"
-                } else {
-                    viewModel.register(email, password, name) { success, error ->
-                        if (success) {
-                            context.startActivity(Intent(context, MainActivity::class.java))
-                            (context as? ComponentActivity)?.finish()
-                        } else {
-                            errorMessage = error ?: "Registration failed"
-                        }
+                viewModel.register(email, password) { success, error ->
+                    if (success) {
+                        context.startActivity(Intent(context, MainActivity::class.java))
+                        (context as? ComponentActivity)?.finish()
+                    } else {
+                        errorMessage = error ?: "Registration failed"
                     }
                 }
             },

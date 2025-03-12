@@ -24,73 +24,47 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         auth.currentUser?.let { firebaseUser ->
-            // Load user data from database if available
-            db.child("users").child(firebaseUser.uid).addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val name = snapshot.child("name").getValue(String::class.java) ?: ""
-                    _user.value = User(firebaseUser.uid, firebaseUser.email ?: "", name, firebaseUser.email == "admin@example.com")
-                    loadActivities(firebaseUser.uid)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    // Fallback to email-based user if database fetch fails
-                    _user.value = User(firebaseUser.uid, firebaseUser.email ?: "", "", firebaseUser.email == "admin@example.com")
-                    loadActivities(firebaseUser.uid)
-                }
-            })
+            _user.value = User(firebaseUser.uid, firebaseUser.email ?: "", firebaseUser.email == "admin@example.com")
+            loadActivities(firebaseUser.uid)
         }
     }
 
+    // Login function (only signs in existing users)
     fun login(email: String, password: String, onComplete: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
                     val firebaseUser = result.user
                     if (firebaseUser != null) {
-                        db.child("users").child(firebaseUser.uid).addListenerForSingleValueEvent(object : ValueEventListener {
-                            override fun onDataChange(snapshot: DataSnapshot) {
-                                val name = snapshot.child("name").getValue(String::class.java) ?: ""
-                                val user = User(firebaseUser.uid, email, name, email == "admin@example.com")
-                                _user.value = user
-                                loadActivities(user.uid)
-                                onComplete(true, null)
-                            }
-
-                            override fun onCancelled(error: DatabaseError) {
-                                onComplete(false, "Failed to load user data")
-                            }
-                        })
+                        val user = User(firebaseUser.uid, email, email == "admin@example.com")
+                        _user.value = user
+                        loadActivities(user.uid)
+                        onComplete(true, null) // Success, no error message
                     } else {
                         onComplete(false, "Login failed: User not found")
                     }
                 }
                 .addOnFailureListener { exception ->
-                    onComplete(false, exception.message)
+                    onComplete(false, exception.message) // Failure with error message
                 }
         }
     }
 
-    fun register(email: String, password: String, name: String, onComplete: (Boolean, String?) -> Unit) {
+    // Register function (creates a new user)
+    fun register(email: String, password: String, onComplete: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnSuccessListener { result ->
                     val firebaseUser = result.user
                     if (firebaseUser != null) {
-                        val user = User(firebaseUser.uid, email, name, email == "admin@example.com")
-                        // Save user data to Realtime Database
-                        db.child("users").child(firebaseUser.uid).setValue(mapOf("name" to name))
-                            .addOnSuccessListener {
-                                _user.value = user
-                                loadActivities(user.uid)
-                                onComplete(true, null)
-                            }
-                            .addOnFailureListener { exception ->
-                                onComplete(false, "Failed to save user data: ${exception.message}")
-                            }
+                        val user = User(firebaseUser.uid, email, email == "admin@example.com")
+                        _user.value = user
+                        loadActivities(user.uid)
+                        onComplete(true, null) // Success, no error message
                     }
                 }
                 .addOnFailureListener { exception ->
-                    onComplete(false, exception.message)
+                    onComplete(false, exception.message) // Failure with error message
                 }
         }
     }
