@@ -26,6 +26,7 @@ class RegisterActivity : ComponentActivity() {
         }
     }
 }
+
 @Composable
 fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
     var email by remember { mutableStateOf("") }
@@ -137,7 +138,7 @@ fun RegisterScreen(viewModel: AppViewModel = viewModel()) {
             confirmButton = {
                 TextButton(onClick = {
                     showSuccessDialog = false
-                    context.startActivity(Intent(context, MainActivity::class.java))
+                    context.startActivity(Intent(context, ActivitySelectionActivity::class.java))
                     (context as? ComponentActivity)?.finish()
                 }) {
                     Text("OK")

@@ -3,6 +3,7 @@ package com.example.recreationapp.model
 data class User(
     val uid: String = "",
     val email: String = "",
-    val name: String = "", // Added default value
-    val isAdmin: Boolean = false // Added default value
+    val name: String = "",
+    val isAdmin: Boolean = false,
+    val preferredActivities: List<String> = emptyList() // Add this field
 )
