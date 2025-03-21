@@ -1,32 +1,21 @@
 package com.example.recreationapp.player
 
 import android.content.Context
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import androidx.media3.common.C
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.okhttp.OkHttpDataSource
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.lifecycle.LifecycleOwner
 import com.example.recreationapp.api.MusicItem
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import okhttp3.OkHttpClient
-import java.util.concurrent.TimeUnit
 
-class YoutubePlayerWrapper(context: Context) {
-
-    private val player: ExoPlayer
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS)
-        .build()
+class YoutubePlayerWrapper(
+    private val context: Context,
+    private val lifecycleOwner: LifecycleOwner,
+    private val playerView: YouTubePlayerView
+) {
+    private var youTubePlayer: YouTubePlayer? = null
 
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
@@ -37,105 +26,68 @@ class YoutubePlayerWrapper(context: Context) {
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying.asStateFlow()
 
-    private val _bufferingPercentage = MutableStateFlow(0)
-    val bufferingPercentage: StateFlow<Int> = _bufferingPercentage.asStateFlow()
-
     private val _currentTrack = MutableStateFlow<MusicItem?>(null)
     val currentTrack: StateFlow<MusicItem?> = _currentTrack.asStateFlow()
 
-    private val _playbackState = MutableStateFlow(Player.STATE_IDLE)
+    private val _playbackState = MutableStateFlow(0)
     val playbackState: StateFlow<Int> = _playbackState.asStateFlow()
 
     init {
-        val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
-
-        player = ExoPlayer.Builder(context)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSourceFactory))
-            .build()
-
-        player.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                _isPlaying.value = isPlaying
+        playerView.addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+            override fun onReady(player: YouTubePlayer) {
+                youTubePlayer = player
             }
 
-            override fun onPlaybackStateChanged(state: Int) {
-                _playbackState.value = state
-                if (state == Player.STATE_READY) {
-                    _totalDuration.value = player.duration
+            override fun onStateChange(youTubePlayer: YouTubePlayer, state: com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState) {
+                when (state) {
+                    com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PLAYING -> _isPlaying.value = true
+                    com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PAUSED -> _isPlaying.value = false
+                    com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.ENDED -> {
+                        _isPlaying.value = false
+                        _currentPosition.value = 0L
+                    }
+                    else -> {}
                 }
+                _playbackState.value = state.ordinal
+            }
+
+            override fun onCurrentSecond(youTubePlayer: YouTubePlayer, second: Float) {
+                _currentPosition.value = (second * 1000).toLong()
+            }
+
+            override fun onVideoDuration(youTubePlayer: YouTubePlayer, duration: Float) {
+                _totalDuration.value = (duration * 1000).toLong()
             }
         })
 
-        // Start position tracking
-        createPositionTracker()
-    }
-
-    private fun createPositionTracker() {
-        player.createPositionTracker(
-            period = 500,
-            onPositionChanged = { position ->
-                _currentPosition.value = position
-                _bufferingPercentage.value = player.bufferedPercentage
-            }
-        )
+        lifecycleOwner.lifecycle.addObserver(playerView)
     }
 
     fun play(musicItem: MusicItem) {
-        // Format for YouTube videos
-        val videoUrl = "https://www.youtube.com/watch?v=${musicItem.id}"
-        val mediaItem = MediaItem.fromUri(videoUrl)
-
-        player.setMediaItem(mediaItem)
-        player.prepare()
-        player.play()
-
+        youTubePlayer?.loadVideo(musicItem.id, 0f)
         _currentTrack.value = musicItem
     }
 
     fun togglePlayPause() {
-        if (player.isPlaying) {
-            player.pause()
+        if (_isPlaying.value) {
+            youTubePlayer?.pause()
         } else {
-            player.play()
+            youTubePlayer?.play()
         }
     }
 
     fun seekTo(position: Long) {
-        player.seekTo(position)
+        youTubePlayer?.seekTo(position / 1000f)
     }
 
     fun stop() {
-        player.stop()
+        youTubePlayer?.pause()
         _currentTrack.value = null
+        _currentPosition.value = 0L
     }
 
     fun release() {
-        player.release()
+        playerView.release()
         _currentTrack.value = null
     }
-}
-
-// Extension function to create a position tracker
-fun Player.createPositionTracker(
-    period: Long = 1000,
-    onPositionChanged: (Long) -> Unit
-) {
-    val handler = Handler(Looper.getMainLooper())
-    val runnable = object : Runnable {
-        override fun run() {
-            onPositionChanged(currentPosition)
-            if (isPlaying) {
-                handler.postDelayed(this, period)
-            }
-        }
-    }
-
-    addListener(object : Player.Listener {
-        override fun onIsPlayingChanged(isPlaying: Boolean) {
-            handler.removeCallbacks(runnable)
-            if (isPlaying) {
-                handler.postDelayed(runnable, 0)
-            }
-        }
-    })
 }

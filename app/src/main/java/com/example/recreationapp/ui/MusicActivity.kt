@@ -22,11 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.recreationapp.api.MusicCategory
@@ -34,42 +36,38 @@ import com.example.recreationapp.api.MusicItem
 import com.example.recreationapp.player.YoutubePlayerWrapper
 import com.example.recreationapp.viewmodel.AppViewModel
 import com.example.recreationapp.viewmodel.MusicViewModel
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import java.util.concurrent.TimeUnit
 
 class MusicActivity : ComponentActivity() {
-    private lateinit var playerWrapper: YoutubePlayerWrapper
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        playerWrapper = YoutubePlayerWrapper(this)
-
         setContent {
             MaterialTheme {
-                EnhancedMusicScreen(playerWrapper)
+                EnhancedMusicScreen()
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        playerWrapper.release()
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EnhancedMusicScreen(
-    playerWrapper: YoutubePlayerWrapper,
     appViewModel: AppViewModel = viewModel(),
     musicViewModel: MusicViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val playerView = remember { YouTubePlayerView(context) }
+    val playerWrapper = remember {
+        YoutubePlayerWrapper(context, lifecycleOwner, playerView)
+    }
+
     val currentTrack by playerWrapper.currentTrack.collectAsState()
     val isPlaying by playerWrapper.isPlaying.collectAsState()
     val currentPosition by playerWrapper.currentPosition.collectAsState()
     val totalDuration by playerWrapper.totalDuration.collectAsState()
-    val bufferingPercentage by playerWrapper.bufferingPercentage.collectAsState()
     val playbackState by playerWrapper.playbackState.collectAsState()
 
     val categories by musicViewModel.categories.collectAsState()
@@ -79,21 +77,21 @@ fun EnhancedMusicScreen(
     val searchQuery by musicViewModel.searchQuery.collectAsState()
     val recentlyPlayed by musicViewModel.recentlyPlayed.collectAsState()
 
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-
     var isSearchVisible by remember { mutableStateOf(false) }
     var isPlayerExpanded by remember { mutableStateOf(false) }
 
-    // Observe currentTrack and update recently played
     LaunchedEffect(currentTrack) {
         currentTrack?.let { track ->
             musicViewModel.addToRecentlyPlayed(track)
-
-            // Log activity
             appViewModel.user.value?.uid?.let { uid ->
                 appViewModel.addActivity(uid, "Music", "Played ${track.title}")
             }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            playerWrapper.release()
         }
     }
 
@@ -107,10 +105,7 @@ fun EnhancedMusicScreen(
                 ),
                 actions = {
                     IconButton(onClick = { isSearchVisible = !isSearchVisible }) {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = "Search"
-                        )
+                        Icon(Icons.Filled.Search, "Search")
                     }
                 }
             )
@@ -118,7 +113,6 @@ fun EnhancedMusicScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Search bar
                 AnimatedVisibility(
                     visible = isSearchVisible,
                     enter = fadeIn(),
@@ -132,7 +126,6 @@ fun EnhancedMusicScreen(
                     )
                 }
 
-                // Categories
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -149,14 +142,12 @@ fun EnhancedMusicScreen(
                     }
                 }
 
-                // Recently played section (if available)
                 if (recentlyPlayed.isNotEmpty()) {
                     Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
                         Text(
                             "Recently Played",
                             style = MaterialTheme.typography.titleMedium
                         )
-
                         LazyRow(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -166,16 +157,13 @@ fun EnhancedMusicScreen(
                             items(recentlyPlayed) { track ->
                                 RecentlyPlayedItem(
                                     musicItem = track,
-                                    onClick = {
-                                        playerWrapper.play(track)
-                                    }
+                                    onClick = { playerWrapper.play(track) }
                                 )
                             }
                         }
                     }
                 }
 
-                // Music items
                 Box(modifier = Modifier.weight(1f)) {
                     if (isLoading) {
                         Box(
@@ -206,12 +194,8 @@ fun EnhancedMusicScreen(
                                 MusicListItem(
                                     musicItem = track,
                                     isPlaying = currentTrack?.id == track.id && isPlaying,
-                                    onPlayClick = {
-                                        playerWrapper.play(track)
-                                    },
-                                    onFavoriteToggle = {
-                                        musicViewModel.toggleFavorite(track)
-                                    }
+                                    onPlayClick = { playerWrapper.play(track) },
+                                    onFavoriteToggle = { musicViewModel.toggleFavorite(track) }
                                 )
                             }
                         }
@@ -219,7 +203,6 @@ fun EnhancedMusicScreen(
                 }
             }
 
-            // Mini player
             AnimatedVisibility(
                 visible = currentTrack != null && !isPlayerExpanded,
                 enter = fadeIn(),
@@ -236,7 +219,6 @@ fun EnhancedMusicScreen(
                 }
             }
 
-            // Full screen player
             AnimatedVisibility(
                 visible = isPlayerExpanded,
                 enter = fadeIn(),
@@ -249,7 +231,7 @@ fun EnhancedMusicScreen(
                         isPlaying = isPlaying,
                         currentPosition = currentPosition,
                         totalDuration = totalDuration,
-                        bufferingPercentage = bufferingPercentage,
+                        playerView = playerView,
                         onPlayPauseClick = { playerWrapper.togglePlayPause() },
                         onSeek = { playerWrapper.seekTo(it) },
                         onClose = { isPlayerExpanded = false },
@@ -534,7 +516,7 @@ fun FullScreenPlayer(
     isPlaying: Boolean,
     currentPosition: Long,
     totalDuration: Long,
-    bufferingPercentage: Int,
+    playerView: YouTubePlayerView,
     onPlayPauseClick: () -> Unit,
     onSeek: (Long) -> Unit,
     onClose: () -> Unit,
@@ -556,37 +538,22 @@ fun FullScreenPlayer(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onClose) {
-                    Icon(
-                        imageVector = Icons.Filled.ExpandMore,
-                        contentDescription = "Collapse"
-                    )
+                    Icon(Icons.Filled.ExpandMore, "Collapse")
                 }
-
-                Text(
-                    text = "Now Playing",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
+                Text("Now Playing", style = MaterialTheme.typography.titleMedium)
                 IconButton(onClick = onStop) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "Stop"
-                    )
+                    Icon(Icons.Filled.Close, "Stop")
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            AsyncImage(
-                model = musicItem.thumbnailUrl,
-                contentDescription = "Album art",
+            AndroidView(
+                factory = { playerView },
                 modifier = Modifier
-                    .size(300.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
+                    .fillMaxWidth()
+                    .height(200.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = musicItem.title,
@@ -607,7 +574,6 @@ fun FullScreenPlayer(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Linear progress bar
             Column(modifier = Modifier.fillMaxWidth()) {
                 LinearProgressIndicator(
                     progress = {
@@ -616,9 +582,7 @@ fun FullScreenPlayer(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp),
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    color = MaterialTheme.colorScheme.primary
+                        .height(4.dp)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -627,116 +591,42 @@ fun FullScreenPlayer(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = formatDuration(currentPosition),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-
-                    Text(
-                        text = formatDuration(totalDuration),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Text(formatDuration(currentPosition), style = MaterialTheme.typography.bodySmall)
+                    Text(formatDuration(totalDuration), style = MaterialTheme.typography.bodySmall)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Media controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { /* Skip to previous */ }) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipPrevious,
-                        contentDescription = "Previous",
-                        modifier = Modifier.size(36.dp)
-                    )
+                IconButton(onClick = { /* Previous */ }) {
+                    Icon(Icons.Filled.SkipPrevious, "Previous", modifier = Modifier.size(36.dp))
                 }
-
                 IconButton(
                     onClick = onPlayPauseClick,
                     modifier = Modifier
                         .size(64.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                 ) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (isPlaying) "Pause" else "Play",
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
-
-                IconButton(onClick = { /* Skip to next */ }) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = "Next",
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Additional controls
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    IconButton(onClick = { /* Toggle repeat */ }) {
-                        Icon(
-                            imageVector = Icons.Filled.Repeat,
-                            contentDescription = "Repeat"
-                        )
-                    }
-                    Text(
-                        text = "Repeat",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    IconButton(onClick = { /* Toggle shuffle */ }) {
-                        Icon(
-                            imageVector = Icons.Filled.Shuffle,
-                            contentDescription = "Shuffle"
-                        )
-                    }
-                    Text(
-                        text = "Shuffle",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    IconButton(onClick = { /* Add to playlist */ }) {
-                        Icon(
-                            imageVector = Icons.Filled.PlaylistAdd,
-                            contentDescription = "Add to playlist"
-                        )
-                    }
-                    Text(
-                        text = "Playlist",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                IconButton(onClick = { /* Next */ }) {
+                    Icon(Icons.Filled.SkipNext, "Next", modifier = Modifier.size(36.dp))
                 }
             }
         }
     }
 }
 
-// Helper function to format duration
 @Composable
 fun formatDuration(durationMs: Long): String {
     val minutes = TimeUnit.MILLISECONDS.toMinutes(durationMs)
