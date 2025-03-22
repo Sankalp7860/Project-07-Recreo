@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment // Add this import
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -71,7 +71,7 @@ fun SettingsScreen(viewModel: AppViewModel, navController: NavHostController) {
             onClick = {
                 viewModel.logout()
                 context.startActivity(Intent(context, LoginActivity::class.java))
-                navController.navigate("home") // Navigate back to home screen
+                navController.navigate("home")
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
@@ -102,7 +102,8 @@ fun ActivitySelectionDialog(
     val availableActivities = listOf(
         "Music",
         "Drawing",
-        "Daily Journal",
+        "Games", // Renamed from "Daily Journal" to "Games"
+        "Journal", // Added new Journal section
         "Community Sharing",
         "Books"
     )

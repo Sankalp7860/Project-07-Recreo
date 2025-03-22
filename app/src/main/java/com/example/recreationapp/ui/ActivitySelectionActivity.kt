@@ -28,17 +28,15 @@ class ActivitySelectionActivity : ComponentActivity() {
     }
 }
 
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivitySelectionScreen(viewModel: AppViewModel = viewModel()) {
     val context = LocalContext.current
-    // List of available activities (just the names, no activity classes needed)
     val availableActivities = listOf(
         "Music",
         "Drawing",
-        "Daily Journal",
+        "Games", // Renamed from "Daily Journal" to "Games"
+        "Journal", // Added new Journal section
         "Community Sharing",
         "Books"
     )

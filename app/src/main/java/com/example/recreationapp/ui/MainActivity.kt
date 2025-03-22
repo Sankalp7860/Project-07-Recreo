@@ -42,7 +42,8 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
     val allActivities = listOf(
         "Music",
         "Drawing",
-        "Daily Journal",
+        "Games", // Renamed from "Daily Journal" to "Games"
+        "Journal", // New Journal section
         "Community Sharing",
         "Books"
     )
@@ -117,14 +118,17 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
                     )
                 }
             }
-            composable("Daily Journal") {
-                JournalScreen()
+            composable("Games") { // Renamed from "Daily Journal" to "Games"
+                GamesScreen() // This is the old JournalScreen, now for games
+            }
+            composable("Journal") { // New Journal section
+                NewJournalScreen(viewModel = viewModel) // We'll create this new screen
             }
             composable("Community Sharing") {
                 CommunityScreen()
             }
             composable("Books") {
-                BooksApp() // Use BooksApp as the entry point for the books feature
+                BooksApp()
             }
             composable("Settings") {
                 SettingsScreen(viewModel, navController)
@@ -163,7 +167,8 @@ fun BottomNavigationBar(
                     when (activity) {
                         "Music" -> Icon(Icons.Filled.MusicNote, contentDescription = activity)
                         "Drawing" -> Icon(Icons.Filled.Brush, contentDescription = activity)
-                        "Daily Journal" -> Icon(Icons.Filled.Book, contentDescription = activity)
+                        "Games" -> Icon(Icons.Filled.SportsEsports, contentDescription = activity) // Updated icon for Games
+                        "Journal" -> Icon(Icons.Filled.Book, contentDescription = activity) // Icon for new Journal
                         "Community Sharing" -> Icon(Icons.Filled.Group, contentDescription = activity)
                         "Books" -> Icon(Icons.Filled.MenuBook, contentDescription = activity)
                         else -> Icon(Icons.Filled.Star, contentDescription = activity)
