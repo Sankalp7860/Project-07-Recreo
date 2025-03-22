@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
+        android:enableOnBackInvokedCallback="true"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -35,32 +36,9 @@
             android:name=".ui.ActivitySelectionActivity"
             android:exported="false" />
 
-        <!-- Settings Activity -->
-        <activity
-            android:name=".ui.SettingsActivity"
-            android:exported="false" />
-
         <!-- Main Activity -->
         <activity
             android:name=".ui.MainActivity"
-            android:exported="false" />
-
-        <!-- Other Activities from MainActivity -->
-        <activity
-            android:name=".ui.MusicActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.DrawingActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.JournalActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.CommunityActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ui.NewsActivity"
             android:exported="false" />
     </application>
 </manifest>

@@ -12,8 +12,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.recreationapp.viewmodel.AppViewModel
 
@@ -27,16 +27,20 @@ class ActivitySelectionActivity : ComponentActivity() {
         }
     }
 }
+
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivitySelectionScreen(viewModel: AppViewModel = viewModel()) {
     val context = LocalContext.current
+    // List of available activities (just the names, no activity classes needed)
     val availableActivities = listOf(
-        "Music" to MusicActivity::class.java,
-        "Drawing" to DrawingActivity::class.java,
-        "Daily Journal" to JournalActivity::class.java,
-        "Community Sharing" to CommunityActivity::class.java,
-        "Books" to NewsActivity::class.java
+        "Music",
+        "Drawing",
+        "Daily Journal",
+        "Community Sharing",
+        "Books"
     )
 
     var selectedActivities by remember { mutableStateOf(listOf<String>()) }
@@ -70,7 +74,7 @@ fun ActivitySelectionScreen(viewModel: AppViewModel = viewModel()) {
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(availableActivities) { (activityName, _) ->
+                items(availableActivities) { activityName ->
                     val isSelected = selectedActivities.contains(activityName)
                     Card(
                         modifier = Modifier

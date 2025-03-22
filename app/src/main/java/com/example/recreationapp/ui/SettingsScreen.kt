@@ -1,122 +1,96 @@
 package com.example.recreationapp.ui
 
 import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Alignment // Add this import
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.recreationapp.viewmodel.AppViewModel
 
-class SettingsActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                SettingsScreen()
-            }
-        }
-    }
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: AppViewModel = viewModel()) {
+fun SettingsScreen(viewModel: AppViewModel, navController: NavHostController) {
     val user by viewModel.user.observeAsState()
     val context = LocalContext.current
     var showActivitySelection by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "User Details",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "User Details",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
-            user?.let { userData ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+        user?.let { userData ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text("Name: ${userData.name}")
-                        Text("Email: ${userData.email}")
-                        Text("Preferred Activities: ${userData.preferredActivities.joinToString()}")
+                    Text("Name: ${userData.name}")
+                    Text("Email: ${userData.email}")
+                    Text("Preferred Activities: ${userData.preferredActivities.joinToString()}")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Customize Navigation",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        Button(
+            onClick = { showActivitySelection = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Change Preferred Activities")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {
+                viewModel.logout()
+                context.startActivity(Intent(context, LoginActivity::class.java))
+                navController.navigate("home") // Navigate back to home screen
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Text("Logout")
+        }
+
+        if (showActivitySelection) {
+            ActivitySelectionDialog(
+                onDismiss = { showActivitySelection = false },
+                onConfirm = { newActivities ->
+                    viewModel.updateUserPreferences(newActivities) {
+                        showActivitySelection = false
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Customize Navigation",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
             )
-
-            Button(
-                onClick = { showActivitySelection = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Change Preferred Activities")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    viewModel.logout()
-                    context.startActivity(Intent(context, LoginActivity::class.java))
-                    (context as ComponentActivity).finish()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Logout")
-            }
         }
-    }
-
-    if (showActivitySelection) {
-        ActivitySelectionDialog(
-            onDismiss = { showActivitySelection = false },
-            onConfirm = { newActivities ->
-                viewModel.updateUserPreferences(newActivities) {
-                    showActivitySelection = false
-                }
-            }
-        )
     }
 }
 

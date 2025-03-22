@@ -1,25 +1,24 @@
 package com.example.recreationapp.ui
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.recreationapp.model.ActivityRecord
 import com.example.recreationapp.viewmodel.AppViewModel
 
 class MainActivity : ComponentActivity() {
@@ -37,96 +36,98 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(viewModel: AppViewModel = viewModel()) {
     val user by viewModel.user.observeAsState(initial = null)
-    val activities by viewModel.activities.observeAsState(initial = emptyList())
-    val context = LocalContext.current
-    var contentType by remember { mutableStateOf("") }
-    var contentText by remember { mutableStateOf("") }
-    var selectedScreen by remember { mutableStateOf("Home") }
-
-    val activityMap = mapOf(
-        "Music" to MusicActivity::class.java,
-        "Drawing" to DrawingActivity::class.java,
-        "Daily Journal" to JournalActivity::class.java,
-        "Community Sharing" to CommunityActivity::class.java,
-        "Books" to NewsActivity::class.java
-    )
+    val navController = rememberNavController()
 
     val preferredActivities = user?.preferredActivities ?: emptyList()
-    val otherActivities = activityMap.keys.filterNot { it in preferredActivities }
+    val allActivities = listOf(
+        "Music",
+        "Drawing",
+        "Daily Journal",
+        "Community Sharing",
+        "Books"
+    )
+    val otherActivities = allActivities.filterNot { it in preferredActivities }
 
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
                 preferredActivities = preferredActivities,
                 otherActivities = otherActivities,
-                selectedScreen = selectedScreen,
-                onScreenSelected = { screen -> selectedScreen = screen },
-                onActivitySelected = { activity ->
-                    context.startActivity(Intent(context, activityMap[activity]))
-                }
+                navController = navController
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            modifier = Modifier.padding(paddingValues)
         ) {
-            when (selectedScreen) {
-                "Home" -> {
-                    // Admin Section
-                    if (user?.isAdmin == true) {
-                        Text("Admin Controls", style = MaterialTheme.typography.titleLarge)
-                        OutlinedTextField(
-                            value = contentType,
-                            onValueChange = { contentType = it },
-                            label = { Text("Content Type (e.g., News, Community)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedLabelColor = Color.White,
-                                unfocusedLabelColor = Color.Gray,
-                                cursorColor = Color.White
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = contentText,
-                            onValueChange = { contentText = it },
-                            label = { Text("Content") },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                focusedLabelColor = Color.White,
-                                unfocusedLabelColor = Color.Gray,
-                                cursorColor = Color.White
-                            )
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = {
-                                if (contentType.isNotBlank() && contentText.isNotBlank()) {
-                                    viewModel.addGlobalContent(contentType, contentText)
-                                    contentType = ""
-                                    contentText = ""
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Add Global Content")
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                    }
-
-                    LazyColumn {
-                        items(activities) { activity ->
-                            ActivityItem(activity, user?.isAdmin == true, viewModel::deleteActivity)
-                        }
-                    }
+            composable("home") {
+                HomeScreen(viewModel)
+            }
+            composable("Music") {
+                MusicScreen()
+            }
+            composable("Drawing") {
+                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                    DrawingsOverviewScreen(
+                        navController = navController,
+                        snackbarHostState = SnackbarHostState(),
+                        viewModel = viewModel
+                    )
                 }
+            }
+            composable("new_drawing") {
+                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                    DrawingScreen(
+                        viewModel = viewModel,
+                        snackbarHostState = SnackbarHostState(),
+                        navController = navController,
+                        editMode = false,
+                        drawingPath = null
+                    )
+                }
+            }
+            composable(
+                "edit_drawing/{drawingPath}",
+                arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val drawingPath = backStackEntry.arguments?.getString("drawingPath")
+                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                    DrawingScreen(
+                        viewModel = viewModel,
+                        snackbarHostState = SnackbarHostState(),
+                        navController = navController,
+                        editMode = true,
+                        drawingPath = drawingPath
+                    )
+                }
+            }
+            composable(
+                "view_drawing/{drawingPath}",
+                arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val drawingPath = backStackEntry.arguments?.getString("drawingPath")
+                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                    ViewDrawingScreen(
+                        drawingPath = drawingPath ?: "",
+                        navController = navController,
+                        snackbarHostState = SnackbarHostState(),
+                        viewModel = viewModel
+                    )
+                }
+            }
+            composable("Daily Journal") {
+                JournalScreen()
+            }
+            composable("Community Sharing") {
+                CommunityScreen()
+            }
+            composable("Books") {
+                BooksApp() // Use BooksApp as the entry point for the books feature
+            }
+            composable("Settings") {
+                SettingsScreen(viewModel, navController)
             }
         }
     }
@@ -136,17 +137,23 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
 fun BottomNavigationBar(
     preferredActivities: List<String>,
     otherActivities: List<String>,
-    selectedScreen: String,
-    onScreenSelected: (String) -> Unit,
-    onActivitySelected: (String) -> Unit
+    navController: NavHostController
 ) {
+    var selectedScreen by remember { mutableStateOf("home") }
+
     NavigationBar {
         // Home button
         NavigationBarItem(
             icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
             label = { Text("Home") },
-            selected = selectedScreen == "Home",
-            onClick = { onScreenSelected("Home") }
+            selected = selectedScreen == "home",
+            onClick = {
+                selectedScreen = "home"
+                navController.navigate("home") {
+                    popUpTo(navController.graph.startDestinationId)
+                    launchSingleTop = true
+                }
+            }
         )
 
         // Preferred activities
@@ -165,8 +172,11 @@ fun BottomNavigationBar(
                 label = { Text(activity) },
                 selected = selectedScreen == activity,
                 onClick = {
-                    onScreenSelected(activity)
-                    onActivitySelected(activity)
+                    selectedScreen = activity
+                    navController.navigate(activity) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -176,7 +186,7 @@ fun BottomNavigationBar(
             icon = { Icon(Icons.Filled.MoreHoriz, contentDescription = "More") },
             label = { Text("More") },
             selected = selectedScreen == "More",
-            onClick = { onScreenSelected("More") }
+            onClick = { selectedScreen = "More" }
         )
 
         // Settings
@@ -184,7 +194,13 @@ fun BottomNavigationBar(
             icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
             label = { Text("Settings") },
             selected = selectedScreen == "Settings",
-            onClick = { onScreenSelected("Settings") }
+            onClick = {
+                selectedScreen = "Settings"
+                navController.navigate("Settings") {
+                    popUpTo(navController.graph.startDestinationId)
+                    launchSingleTop = true
+                }
+            }
         )
     }
 
@@ -192,7 +208,10 @@ fun BottomNavigationBar(
     if (selectedScreen == "More") {
         DropdownMenu(
             expanded = true,
-            onDismissRequest = { onScreenSelected("Home") },
+            onDismissRequest = {
+                selectedScreen = "home"
+                navController.navigate("home")
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -201,39 +220,13 @@ fun BottomNavigationBar(
                 DropdownMenuItem(
                     text = { Text(activity) },
                     onClick = {
-                        onActivitySelected(activity)
-                        onScreenSelected(activity)
+                        selectedScreen = activity
+                        navController.navigate(activity) {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
                     }
                 )
-            }
-        }
-    }
-
-    // Navigate to Settings
-    if (selectedScreen == "Settings") {
-        val context = LocalContext.current
-        LaunchedEffect(Unit) {
-            context.startActivity(Intent(context, SettingsActivity::class.java))
-            onScreenSelected("Home")
-        }
-    }
-}
-
-@Composable
-fun ActivityItem(activity: ActivityRecord, isAdmin: Boolean, onDelete: (String) -> Unit) {
-    Card(modifier = Modifier.padding(8.dp)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(activity.activityType, style = MaterialTheme.typography.titleMedium)
-                Text(activity.content)
-            }
-            if (isAdmin) {
-                Text("Delete", modifier = Modifier.clickable { onDelete(activity.id) })
             }
         }
     }

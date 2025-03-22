@@ -1,20 +1,16 @@
 package com.example.recreationapp.ui
 
-import androidx.compose.ui.graphics.asImageBitmap
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.net.Uri
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -39,19 +35,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import coil.compose.rememberAsyncImagePainter
 import com.example.recreationapp.viewmodel.AppViewModel
 import java.io.File
 import java.io.FileOutputStream
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import android.graphics.PathMeasure // Use Android PathMeasure for scaling paths
+import android.graphics.PathMeasure
+import kotlinx.coroutines.launch
 
 private object CustomIcons {
     val Draw = Icons.Filled.Edit
@@ -82,74 +73,25 @@ data class DrawingPath(
     val isEraser: Boolean
 )
 
-class DrawingActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme(colorScheme = LightColorScheme) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    DrawingAppNavigation()
-                }
-            }
-        }
-    }
-}
-
 @Composable
-fun DrawingAppNavigation(viewModel: AppViewModel = viewModel()) {
-    val navController = rememberNavController()
+fun DrawingAppScreen(
+    navController: NavHostController,
+    viewModel: AppViewModel = viewModel(),
+    content: @Composable () -> Unit // Add content parameter
+) {
     val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
-        NavHost(navController = navController, startDestination = "drawings_overview") {
-            composable("drawings_overview") {
-                DrawingsOverviewScreen(
-                    navController = navController,
-                    padding = padding,
-                    snackbarHostState = snackbarHostState,
-                    viewModel = viewModel
-                )
+    MaterialTheme(colorScheme = LightColorScheme) {
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                content() // Render the content provided by the NavHost
             }
-            composable("new_drawing") {
-                DrawingScreen(
-                    viewModel = viewModel,
-                    padding = padding,
-                    snackbarHostState = snackbarHostState,
-                    navController = navController,
-                    editMode = false,
-                    drawingPath = null
-                )
-            }
-            composable(
-                "edit_drawing/{drawingPath}",
-                arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val drawingPath = backStackEntry.arguments?.getString("drawingPath")
-                DrawingScreen(
-                    viewModel = viewModel,
-                    padding = padding,
-                    snackbarHostState = snackbarHostState,
-                    navController = navController,
-                    editMode = true,
-                    drawingPath = drawingPath
-                )
-            }
-            composable(
-                "view_drawing/{drawingPath}",
-                arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
-            ) { backStackEntry ->
-                val drawingPath = backStackEntry.arguments?.getString("drawingPath")
-                ViewDrawingScreen(
-                    drawingPath = drawingPath ?: "",
-                    navController = navController,
-                    padding = padding,
-                    snackbarHostState = snackbarHostState,
-                    viewModel = viewModel
-                )
-            }
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
@@ -157,7 +99,6 @@ fun DrawingAppNavigation(viewModel: AppViewModel = viewModel()) {
 @Composable
 fun DrawingsOverviewScreen(
     navController: NavHostController,
-    padding: PaddingValues,
     snackbarHostState: SnackbarHostState,
     viewModel: AppViewModel
 ) {
@@ -199,7 +140,7 @@ fun DrawingsOverviewScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -319,13 +260,12 @@ fun DrawingCard(drawing: SavedDrawing, onDelete: () -> Unit, onClick: () -> Unit
 fun ViewDrawingScreen(
     drawingPath: String,
     navController: NavHostController,
-    padding: PaddingValues,
     snackbarHostState: SnackbarHostState,
     viewModel: AppViewModel
 ) {
     val decodedPath = Uri.decode(drawingPath)
 
-    Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -397,7 +337,6 @@ fun ViewDrawingScreen(
 @Composable
 fun DrawingScreen(
     viewModel: AppViewModel,
-    padding: PaddingValues,
     snackbarHostState: SnackbarHostState,
     navController: NavHostController,
     editMode: Boolean,
@@ -432,7 +371,7 @@ fun DrawingScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -659,9 +598,9 @@ private fun ColorButton(
             .border(
                 width = if (selectedColor == color && !isEraserMode) 3.dp else 1.dp,
                 color = if (selectedColor == color && !isEraserMode) MaterialTheme.colorScheme.primary else Color.Gray,
-    shape = CircleShape
-    )
-    .clickable { onColorSelected(color) }
+                shape = CircleShape
+            )
+            .clickable { onColorSelected(color) }
     )
 }
 

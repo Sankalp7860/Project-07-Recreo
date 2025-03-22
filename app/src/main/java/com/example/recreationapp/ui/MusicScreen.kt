@@ -1,8 +1,5 @@
 package com.example.recreationapp.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment // Add this import
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -28,7 +25,6 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.recreationapp.api.MusicCategory
@@ -39,20 +35,9 @@ import com.example.recreationapp.viewmodel.MusicViewModel
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import java.util.concurrent.TimeUnit
 
-class MusicActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                EnhancedMusicScreen()
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EnhancedMusicScreen(
+fun MusicScreen(
     appViewModel: AppViewModel = viewModel(),
     musicViewModel: MusicViewModel = viewModel()
 ) {
@@ -95,23 +80,23 @@ fun EnhancedMusicScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Music Player") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                actions = {
-                    IconButton(onClick = { isSearchVisible = !isSearchVisible }) {
-                        Icon(Icons.Filled.Search, "Search")
-                    }
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        TopAppBar(
+            title = { Text("Music Player") },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ),
+            actions = {
+                IconButton(onClick = { isSearchVisible = !isSearchVisible }) {
+                    Icon(Icons.Filled.Search, "Search")
                 }
-            )
-        }
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            }
+        )
+
+        Box(modifier = Modifier.fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
                 AnimatedVisibility(
                     visible = isSearchVisible,
@@ -203,7 +188,8 @@ fun EnhancedMusicScreen(
                 }
             }
 
-            AnimatedVisibility(
+            // Use the general AnimatedVisibility composable
+            this@Column.AnimatedVisibility(
                 visible = currentTrack != null && !isPlayerExpanded,
                 enter = fadeIn(),
                 exit = fadeOut(),
@@ -219,7 +205,8 @@ fun EnhancedMusicScreen(
                 }
             }
 
-            AnimatedVisibility(
+            // Use the general AnimatedVisibility composable
+            this@Column.AnimatedVisibility(
                 visible = isPlayerExpanded,
                 enter = fadeIn(),
                 exit = fadeOut(),

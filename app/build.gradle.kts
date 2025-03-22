@@ -127,6 +127,7 @@ dependencies {
 //    implementation ("com.github.kotvertolet:youtube-jextractor:1.0.0")
 
     implementation ("com.pierfrancescosoffritti.androidyoutubeplayer:core:11.1.0")
+    implementation ("androidx.navigation:navigation-compose:2.7.7")
 
 
 }

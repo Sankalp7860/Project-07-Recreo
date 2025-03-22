@@ -1,8 +1,5 @@
 package com.example.recreationapp.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,88 +31,69 @@ import com.example.recreationapp.viewmodel.AppViewModel
 import kotlin.math.max
 import kotlin.math.min
 
-class JournalActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                GameSelectionScreen()
-            }
-        }
-    }
+enum class GameType {
+    TicTacToe,
+    Minesweeper,
+    Sudoku
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GameSelectionScreen(viewModel: AppViewModel = viewModel()) {
+fun JournalScreen(viewModel: AppViewModel = viewModel()) {
     var selectedGame by remember { mutableStateOf<GameType?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Recreation Games") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        AnimatedVisibility(
+            visible = selectedGame == null,
+            enter = fadeIn(),
+            exit = fadeOut()
         ) {
-            AnimatedVisibility(
-                visible = selectedGame == null,
-                enter = fadeIn(),
-                exit = fadeOut()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
-                ) {
-                    Text(
-                        "Choose a game to play",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                Text(
+                    "Choose a game to play",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold
+                )
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-                    GameCard(
-                        title = "Tic-tac-toe",
-                        description = "Classic X and O game",
-                        onClick = { selectedGame = GameType.TicTacToe }
-                    )
-                    GameCard(
-                        title = "Minesweeper",
-                        description = "Uncover tiles, avoid mines!",
-                        onClick = { selectedGame = GameType.Minesweeper }
-                    )
-                    GameCard(
-                        title = "Sudoku",
-                        description = "Solve the number puzzle!",
-                        onClick = { selectedGame = GameType.Sudoku }
-                    )
-                }
+                GameCard(
+                    title = "Tic-tac-toe",
+                    description = "Classic X and O game",
+                    onClick = { selectedGame = GameType.TicTacToe }
+                )
+                GameCard(
+                    title = "Minesweeper",
+                    description = "Uncover tiles, avoid mines!",
+                    onClick = { selectedGame = GameType.Minesweeper }
+                )
+                GameCard(
+                    title = "Sudoku",
+                    description = "Solve the number puzzle!",
+                    onClick = { selectedGame = GameType.Sudoku }
+                )
             }
+        }
 
-            AnimatedVisibility(
-                visible = selectedGame != null,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    when (selectedGame) {
-                        GameType.TicTacToe -> TicTacToeGame { selectedGame = null }
-                        GameType.Minesweeper -> MinesweeperGame { selectedGame = null }
-                        GameType.Sudoku -> SudokuGame { selectedGame = null }
-                        null -> {}
-                    }
+        AnimatedVisibility(
+            visible = selectedGame != null,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (selectedGame) {
+                    GameType.TicTacToe -> TicTacToeGame { selectedGame = null }
+                    GameType.Minesweeper -> MinesweeperGame { selectedGame = null }
+                    GameType.Sudoku -> SudokuGame { selectedGame = null }
+                    null -> {}
                 }
             }
         }
@@ -759,10 +737,4 @@ fun numberColor(number: Int): Color = when (number) {
     7 -> Color(0xFF6A1B9A)  // Purple
     8 -> Color(0xFF424242)  // Gray
     else -> Color.Black
-}
-
-enum class GameType {
-    TicTacToe,
-    Minesweeper,
-    Sudoku
 }
