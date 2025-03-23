@@ -40,7 +40,7 @@ data class JournalEntry(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewJournalScreen(viewModel: AppViewModel = viewModel()) {
+fun NewJournalScreen(viewModel: AppViewModel) {
     var selectedEntry by remember { mutableStateOf<JournalEntry?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 

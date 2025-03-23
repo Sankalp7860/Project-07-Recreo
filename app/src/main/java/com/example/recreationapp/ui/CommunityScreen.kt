@@ -12,7 +12,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.recreationapp.viewmodel.AppViewModel
 
 @Composable
-fun CommunityScreen(viewModel: AppViewModel = viewModel()) {
+fun CommunityScreen(viewModel: AppViewModel) {
     val activities by viewModel.activities.observeAsState(initial = emptyList())
     var postText by remember { mutableStateOf("") }
 

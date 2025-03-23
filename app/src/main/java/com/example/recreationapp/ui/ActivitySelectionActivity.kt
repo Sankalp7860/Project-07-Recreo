@@ -22,7 +22,8 @@ class ActivitySelectionActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                ActivitySelectionScreen()
+                val viewModel: AppViewModel = viewModel() // Initialize viewModel here
+                ActivitySelectionScreen(viewModel = viewModel)
             }
         }
     }
@@ -30,7 +31,7 @@ class ActivitySelectionActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivitySelectionScreen(viewModel: AppViewModel = viewModel()) {
+fun ActivitySelectionScreen(viewModel: AppViewModel) {
     val context = LocalContext.current
     val availableActivities = listOf(
         "Music",

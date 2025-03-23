@@ -39,7 +39,7 @@ enum class GameType {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GamesScreen(viewModel: AppViewModel = viewModel()) { // Renamed from JournalScreen to GamesScreen
+fun GamesScreen(viewModel: AppViewModel) { // Renamed from JournalScreen to GamesScreen
     var selectedGame by remember { mutableStateOf<GameType?>(null) }
 
     Box(

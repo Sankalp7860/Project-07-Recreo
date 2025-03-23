@@ -76,7 +76,7 @@ data class DrawingPath(
 @Composable
 fun DrawingAppScreen(
     navController: NavHostController,
-    viewModel: AppViewModel = viewModel(),
+    viewModel: AppViewModel,
     content: @Composable () -> Unit // Add content parameter
 ) {
     val snackbarHostState = remember { SnackbarHostState() }

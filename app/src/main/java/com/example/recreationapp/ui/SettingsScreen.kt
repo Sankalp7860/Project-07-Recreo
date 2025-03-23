@@ -1,6 +1,7 @@
 package com.example.recreationapp.ui
 
 import android.content.Intent
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,7 +18,7 @@ import com.example.recreationapp.viewmodel.AppViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: AppViewModel, navController: NavHostController) {
+fun SettingsScreen(viewModel: AppViewModel, navController: NavHostController) { // Removed default value
     val user by viewModel.user.observeAsState()
     val context = LocalContext.current
     var showActivitySelection by remember { mutableStateOf(false) }
@@ -70,8 +71,11 @@ fun SettingsScreen(viewModel: AppViewModel, navController: NavHostController) {
         Button(
             onClick = {
                 viewModel.logout()
-                context.startActivity(Intent(context, LoginActivity::class.java))
-                navController.navigate("home")
+                // Navigate to LoginActivity and clear the activity stack
+                val intent = Intent(context, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                context.startActivity(intent)
+                (context as ComponentActivity).finish()
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
@@ -102,8 +106,8 @@ fun ActivitySelectionDialog(
     val availableActivities = listOf(
         "Music",
         "Drawing",
-        "Games", // Renamed from "Daily Journal" to "Games"
-        "Journal", // Added new Journal section
+        "Games",
+        "Journal",
         "Community Sharing",
         "Books"
     )

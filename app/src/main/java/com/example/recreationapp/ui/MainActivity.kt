@@ -26,7 +26,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                MainScreen()
+                val viewModel: AppViewModel = viewModel() // Initialize viewModel here
+                MainScreen(viewModel = viewModel)
             }
         }
     }
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: AppViewModel = viewModel()) {
+fun MainScreen(viewModel: AppViewModel) { // Removed default value
     val user by viewModel.user.observeAsState(initial = null)
     val navController = rememberNavController()
 
@@ -42,8 +43,8 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
     val allActivities = listOf(
         "Music",
         "Drawing",
-        "Games", // Renamed from "Daily Journal" to "Games"
-        "Journal", // New Journal section
+        "Games",
+        "Journal",
         "Community Sharing",
         "Books"
     )
@@ -70,7 +71,7 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
                 MusicScreen()
             }
             composable("Drawing") {
-                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
                     DrawingsOverviewScreen(
                         navController = navController,
                         snackbarHostState = SnackbarHostState(),
@@ -79,7 +80,7 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
                 }
             }
             composable("new_drawing") {
-                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
                     DrawingScreen(
                         viewModel = viewModel,
                         snackbarHostState = SnackbarHostState(),
@@ -94,7 +95,7 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
                 arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
             ) { backStackEntry ->
                 val drawingPath = backStackEntry.arguments?.getString("drawingPath")
-                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
                     DrawingScreen(
                         viewModel = viewModel,
                         snackbarHostState = SnackbarHostState(),
@@ -109,7 +110,7 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
                 arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
             ) { backStackEntry ->
                 val drawingPath = backStackEntry.arguments?.getString("drawingPath")
-                DrawingAppScreen(navController = navController, viewModel = viewModel()) {
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
                     ViewDrawingScreen(
                         drawingPath = drawingPath ?: "",
                         navController = navController,
@@ -118,14 +119,14 @@ fun MainScreen(viewModel: AppViewModel = viewModel()) {
                     )
                 }
             }
-            composable("Games") { // Renamed from "Daily Journal" to "Games"
-                GamesScreen() // This is the old JournalScreen, now for games
+            composable("Games") {
+                GamesScreen(viewModel = viewModel)
             }
-            composable("Journal") { // New Journal section
-                NewJournalScreen(viewModel = viewModel) // We'll create this new screen
+            composable("Journal") {
+                NewJournalScreen(viewModel = viewModel)
             }
             composable("Community Sharing") {
-                CommunityScreen()
+                CommunityScreen(viewModel = viewModel)
             }
             composable("Books") {
                 BooksApp()
@@ -167,8 +168,8 @@ fun BottomNavigationBar(
                     when (activity) {
                         "Music" -> Icon(Icons.Filled.MusicNote, contentDescription = activity)
                         "Drawing" -> Icon(Icons.Filled.Brush, contentDescription = activity)
-                        "Games" -> Icon(Icons.Filled.SportsEsports, contentDescription = activity) // Updated icon for Games
-                        "Journal" -> Icon(Icons.Filled.Book, contentDescription = activity) // Icon for new Journal
+                        "Games" -> Icon(Icons.Filled.SportsEsports, contentDescription = activity)
+                        "Journal" -> Icon(Icons.Filled.Book, contentDescription = activity)
                         "Community Sharing" -> Icon(Icons.Filled.Group, contentDescription = activity)
                         "Books" -> Icon(Icons.Filled.MenuBook, contentDescription = activity)
                         else -> Icon(Icons.Filled.Star, contentDescription = activity)
