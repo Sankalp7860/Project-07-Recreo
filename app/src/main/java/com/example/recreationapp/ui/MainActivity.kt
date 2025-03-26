@@ -1,24 +1,24 @@
 package com.example.recreationapp.ui
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.recreationapp.model.ActivityRecord
 import com.example.recreationapp.viewmodel.AppViewModel
 
 class MainActivity : ComponentActivity() {
@@ -26,112 +26,213 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                MainScreen()
+                val viewModel: AppViewModel = viewModel() // Initialize viewModel here
+                MainScreen(viewModel = viewModel)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainScreen(viewModel: AppViewModel) { // Removed default value
+    val user by viewModel.user.observeAsState(initial = null)
+    val navController = rememberNavController()
+
+    val preferredActivities = user?.preferredActivities ?: emptyList()
+    val allActivities = listOf(
+        "Music",
+        "Drawing",
+        "Games",
+        "Journal",
+        "Community Sharing",
+        "Books"
+    )
+    val otherActivities = allActivities.filterNot { it in preferredActivities }
+
+    Scaffold(
+        bottomBar = {
+            BottomNavigationBar(
+                preferredActivities = preferredActivities,
+                otherActivities = otherActivities,
+                navController = navController
+            )
+        }
+    ) { paddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            modifier = Modifier.padding(paddingValues)
+        ) {
+            composable("home") {
+                HomeScreen(viewModel)
+            }
+            composable("Music") {
+                MusicScreen()
+            }
+            composable("Drawing") {
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
+                    DrawingsOverviewScreen(
+                        navController = navController,
+                        snackbarHostState = SnackbarHostState(),
+                        viewModel = viewModel
+                    )
+                }
+            }
+            composable("new_drawing") {
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
+                    DrawingScreen(
+                        viewModel = viewModel,
+                        snackbarHostState = SnackbarHostState(),
+                        navController = navController,
+                        editMode = false,
+                        drawingPath = null
+                    )
+                }
+            }
+            composable(
+                "edit_drawing/{drawingPath}",
+                arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val drawingPath = backStackEntry.arguments?.getString("drawingPath")
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
+                    DrawingScreen(
+                        viewModel = viewModel,
+                        snackbarHostState = SnackbarHostState(),
+                        navController = navController,
+                        editMode = true,
+                        drawingPath = drawingPath
+                    )
+                }
+            }
+            composable(
+                "view_drawing/{drawingPath}",
+                arguments = listOf(navArgument("drawingPath") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val drawingPath = backStackEntry.arguments?.getString("drawingPath")
+                DrawingAppScreen(navController = navController, viewModel = viewModel) {
+                    ViewDrawingScreen(
+                        drawingPath = drawingPath ?: "",
+                        navController = navController,
+                        snackbarHostState = SnackbarHostState(),
+                        viewModel = viewModel
+                    )
+                }
+            }
+            composable("Games") {
+                GamesScreen(viewModel = viewModel)
+            }
+            composable("Journal") {
+                NewJournalScreen(viewModel = viewModel)
+            }
+            composable("Community Sharing") {
+                CommunityScreen(viewModel = viewModel)
+            }
+            composable("Books") {
+                BooksApp()
+            }
+            composable("Settings") {
+                SettingsScreen(viewModel, navController)
             }
         }
     }
 }
 
 @Composable
-fun MainScreen(viewModel: AppViewModel = viewModel()) {
-    val user by viewModel.user.observeAsState(initial = null)
-    val activities by viewModel.activities.observeAsState(initial = emptyList())
-    val context = LocalContext.current
-    var contentType by remember { mutableStateOf("") }
-    var contentText by remember { mutableStateOf("") }
+fun BottomNavigationBar(
+    preferredActivities: List<String>,
+    otherActivities: List<String>,
+    navController: NavHostController
+) {
+    var selectedScreen by remember { mutableStateOf("home") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // General User Buttons
-        Button(onClick = { context.startActivity(Intent(context, MusicActivity::class.java)) }) {
-            Text("Music")
-        }
-        Button(onClick = { context.startActivity(Intent(context, DrawingActivity::class.java)) }) {
-            Text("Drawing")
-        }
-        Button(onClick = { context.startActivity(Intent(context, JournalActivity::class.java)) }) {
-            Text("Daily Journal")
-        }
-        Button(onClick = { context.startActivity(Intent(context, CommunityActivity::class.java)) }) {
-            Text("Community Sharing")
-        }
-        Button(onClick = { context.startActivity(Intent(context, NewsActivity::class.java)) }) {
-            Text("Books")
-        }
+    NavigationBar {
+        // Home button
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
+            label = { Text("Home") },
+            selected = selectedScreen == "home",
+            onClick = {
+                selectedScreen = "home"
+                navController.navigate("home") {
+                    popUpTo(navController.graph.startDestinationId)
+                    launchSingleTop = true
+                }
+            }
+        )
 
-        // Admin Section
-        if (user?.isAdmin == true) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Admin Controls", style = MaterialTheme.typography.titleLarge)
-            OutlinedTextField(
-                value = contentType,
-                onValueChange = { contentType = it },
-                label = { Text("Content Type (e.g., News, Community)") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedLabelColor = Color.White,
-                    unfocusedLabelColor = Color.Gray,
-                    cursorColor = Color.White
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = contentText,
-                onValueChange = { contentText = it },
-                label = { Text("Content") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedLabelColor = Color.White,
-                    unfocusedLabelColor = Color.Gray,
-                    cursorColor = Color.White
-                )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = {
-                    if (contentType.isNotBlank() && contentText.isNotBlank()) {
-                        viewModel.addGlobalContent(contentType, contentText)
-                        contentType = ""
-                        contentText = ""
+        // Preferred activities
+        preferredActivities.forEach { activity ->
+            NavigationBarItem(
+                icon = {
+                    when (activity) {
+                        "Music" -> Icon(Icons.Filled.MusicNote, contentDescription = activity)
+                        "Drawing" -> Icon(Icons.Filled.Brush, contentDescription = activity)
+                        "Games" -> Icon(Icons.Filled.SportsEsports, contentDescription = activity)
+                        "Journal" -> Icon(Icons.Filled.Book, contentDescription = activity)
+                        "Community Sharing" -> Icon(Icons.Filled.Group, contentDescription = activity)
+                        "Books" -> Icon(Icons.Filled.MenuBook, contentDescription = activity)
+                        else -> Icon(Icons.Filled.Star, contentDescription = activity)
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Add Global Content")
-            }
+                label = { Text(activity) },
+                selected = selectedScreen == activity,
+                onClick = {
+                    selectedScreen = activity
+                    navController.navigate(activity) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                }
+            )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        LazyColumn {
-            items(activities) { activity ->
-                ActivityItem(activity, user?.isAdmin == true, viewModel::deleteActivity)
+        // More menu
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.MoreHoriz, contentDescription = "More") },
+            label = { Text("More") },
+            selected = selectedScreen == "More",
+            onClick = { selectedScreen = "More" }
+        )
+
+        // Settings
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
+            label = { Text("Settings") },
+            selected = selectedScreen == "Settings",
+            onClick = {
+                selectedScreen = "Settings"
+                navController.navigate("Settings") {
+                    popUpTo(navController.graph.startDestinationId)
+                    launchSingleTop = true
+                }
             }
-        }
+        )
     }
-}
 
-@Composable
-fun ActivityItem(activity: ActivityRecord, isAdmin: Boolean, onDelete: (String) -> Unit) {
-    Card(modifier = Modifier.padding(8.dp)) {
-        Row(
+    // Show dropdown for "More" menu
+    if (selectedScreen == "More") {
+        DropdownMenu(
+            expanded = true,
+            onDismissRequest = {
+                selectedScreen = "home"
+                navController.navigate("home")
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(activity.activityType, style = MaterialTheme.typography.titleMedium)
-                Text(activity.content)
-            }
-            if (isAdmin) {
-                Text("Delete", modifier = Modifier.clickable { onDelete(activity.id) })
+            otherActivities.forEach { activity ->
+                DropdownMenuItem(
+                    text = { Text(activity) },
+                    onClick = {
+                        selectedScreen = activity
+                        navController.navigate(activity) {
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
+                        }
+                    }
+                )
             }
         }
     }

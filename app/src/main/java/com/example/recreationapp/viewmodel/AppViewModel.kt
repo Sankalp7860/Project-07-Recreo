@@ -129,6 +129,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val user = snapshot.getValue(User::class.java)
                 if (user != null) {
                     Log.d(TAG, "User data loaded: $user")
+                    viewModelScope.launch(Dispatchers.Main) {
+                        _user.value = user
+                    }
                     onUserLoaded(user)
                 } else {
                     Log.w(TAG, "No user data found for UID: $uid")
@@ -139,6 +142,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 Log.e(TAG, "User data load cancelled: ${error.message}")
             }
         })
+    }
+
+    fun updateUserPreferences(activities: List<String>, onComplete: () -> Unit) {
+        val currentUser = _user.value ?: return
+        val updatedUser = currentUser.copy(preferredActivities = activities)
+        db.child("users").child(currentUser.uid).setValue(updatedUser)
+            .addOnSuccessListener {
+                viewModelScope.launch(Dispatchers.Main) {
+                    _user.value = updatedUser
+                    onComplete()
+                }
+            }
+            .addOnFailureListener { exception ->
+                Log.e(TAG, "Failed to update user preferences: ${exception.message}")
+            }
     }
 
     fun addActivity(userId: String, activityType: String, content: String) {
@@ -185,5 +203,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 newContentRef.setValue(contentRecord)
             }
         }
+    }
+
+    fun logout() {
+        auth.signOut()
+        _user.value = null
+        _activities.value = emptyList()
     }
 }

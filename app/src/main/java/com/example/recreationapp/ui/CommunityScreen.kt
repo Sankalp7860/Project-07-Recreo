@@ -1,32 +1,18 @@
 package com.example.recreationapp.ui
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.recreationapp.viewmodel.AppViewModel
 
-class CommunityActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                CommunityScreen()
-            }
-        }
-    }
-}
-
 @Composable
-fun CommunityScreen(viewModel: AppViewModel = viewModel()) {
+fun CommunityScreen(viewModel: AppViewModel) {
     val activities by viewModel.activities.observeAsState(initial = emptyList())
     var postText by remember { mutableStateOf("") }
 

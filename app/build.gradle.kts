@@ -95,5 +95,39 @@ dependencies {
     implementation ("com.squareup.okhttp3:okhttp:4.12.0")
     implementation ("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation ("io.coil-kt:coil-compose:2.6.0")
+    // ExoPlayer for media playback
+//    implementation ("androidx.media3:media3-exoplayer:1.2.0")
+    implementation ("androidx.media3:media3-exoplayer-dash:1.2.0")
+//    implementation ("androidx.media3:media3-ui:1.2.0")
+    implementation("androidx.media3:media3-exoplayer:1.4.1")
+    implementation("androidx.media3:media3-ui:1.4.1")
+
+    // OkHttp for network requests
+    implementation ("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation ("androidx.media3:media3-datasource-okhttp:1.2.0")
+
+    // Retrofit for API calls
+    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // Coil for image loading
+    implementation ("io.coil-kt:coil-compose:2.4.0")
+
+    // Compose dependencies
+//    implementation ("androidx.compose.material3:material3:1.1.2")
+    implementation("androidx.compose.material3:material3:1.1.2")
+    implementation ("androidx.compose.material:material-icons-extended:1.5.4")
+    implementation ("androidx.activity:activity-compose:1.8.0")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+
+    // Coroutines
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+//    implementation ("com.github.kotvertolet:youtube-jextractor:0.2.3")
+//    implementation ("com.github.kotvertolet:youtube-jextractor:1.0.0")
+
+    implementation ("com.pierfrancescosoffritti.androidyoutubeplayer:core:11.1.0")
+    implementation ("androidx.navigation:navigation-compose:2.7.7")
+
 
 }

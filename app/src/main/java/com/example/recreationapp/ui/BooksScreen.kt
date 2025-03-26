@@ -2,11 +2,8 @@ package com.example.recreationapp.ui
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -44,20 +41,41 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 
-class NewsActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    BooksApp()
-                }
-            }
-        }
-    }
+@Serializable
+data class BookResponse(
+    val items: List<BookItem> = emptyList(),
+    val totalItems: Int = 0
+)
+
+@Serializable
+data class BookItem(
+    val id: String,
+    val volumeInfo: VolumeInfo
+)
+
+@Serializable
+data class VolumeInfo(
+    val title: String,
+    val authors: List<String> = emptyList(),
+    val description: String? = null,
+    val imageLinks: ImageLinks? = null,
+    val publishedDate: String? = null,
+    val categories: List<String> = emptyList(),
+    val averageRating: Float? = null,
+    val pageCount: Int? = null,
+    val previewLink: String? = null,
+    val infoLink: String? = null
+)
+
+@Serializable
+data class ImageLinks(
+    val thumbnail: String? = null,
+    val smallThumbnail: String? = null
+)
+
+sealed class Screen {
+    object BooksList : Screen()
+    object BookDetail : Screen()
 }
 
 @Composable
@@ -86,43 +104,6 @@ fun BooksApp() {
         }
     }
 }
-
-sealed class Screen {
-    object BooksList : Screen()
-    object BookDetail : Screen()
-}
-
-@Serializable
-data class BookResponse(
-    val items: List<BookItem> = emptyList(),
-    val totalItems: Int = 0
-)
-
-@Serializable
-data class BookItem(
-    val id: String,
-    val volumeInfo: VolumeInfo
-)
-
-@Serializable
-data class VolumeInfo(
-    val title: String,
-    val authors: List<String> = emptyList(),
-    val description: String? = null,
-    val imageLinks: ImageLinks? = null,
-    val publishedDate: String? = null,
-    val categories: List<String> = emptyList(),
-    val averageRating: Float? = null,
-    val pageCount: Int? = null,
-    val previewLink: String? = null, // Added for "Read Sample"
-    val infoLink: String? = null     // Added for "Buy Book"
-)
-
-@Serializable
-data class ImageLinks(
-    val thumbnail: String? = null,
-    val smallThumbnail: String? = null
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
