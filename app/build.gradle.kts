@@ -128,6 +128,14 @@ dependencies {
 
     implementation ("com.pierfrancescosoffritti.androidyoutubeplayer:core:11.1.0")
     implementation ("androidx.navigation:navigation-compose:2.7.7")
+    implementation("io.github.jan-tennert.supabase:supabase-kt:2.6.0")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.6.0")
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.6.0")
+
+    // OkHttp for HTTP requests
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // JSON parsing
+    implementation("org.json:json:20231013")
 
 
 }

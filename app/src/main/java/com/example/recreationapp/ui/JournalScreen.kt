@@ -26,16 +26,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.recreationapp.viewmodel.AppViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.File
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
+@Serializable
 data class JournalEntry(
     val id: String,
+    val user_id: String, // Now a text field in Supabase
     val title: String,
     val content: String,
-    val timestamp: Long
+    val timestamp: Long // Matches INT8 (bigint) in Supabase
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,7 +59,7 @@ fun NewJournalScreen(viewModel: AppViewModel) {
             JournalOverviewScreen(
                 snackbarHostState = snackbarHostState,
                 onEntrySelected = { entry -> selectedEntry = entry },
-                onNewEntry = { selectedEntry = JournalEntry("", "", "", System.currentTimeMillis()) },
+                onNewEntry = { selectedEntry = JournalEntry("", "", "", "", System.currentTimeMillis()) },
                 viewModel = viewModel
             )
         } else {
@@ -77,11 +87,14 @@ fun JournalOverviewScreen(
     var isLoading by remember { mutableStateOf(false) }
     var entryToDelete by remember { mutableStateOf<JournalEntry?>(null) }
     val scope = rememberCoroutineScope()
+    val userId = viewModel.user.value?.uid ?: ""
 
-    LaunchedEffect(Unit) {
-        isLoading = true
-        journalEntries = loadJournalEntries(context)
-        isLoading = false
+    LaunchedEffect(userId) {
+        if (userId.isNotEmpty()) {
+            isLoading = true
+            journalEntries = loadJournalEntries(userId)
+            isLoading = false
+        }
     }
 
     if (entryToDelete != null) {
@@ -92,14 +105,17 @@ fun JournalOverviewScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val file = File(context.getExternalFilesDir(null), "journal/${entryToDelete!!.id}.txt")
-                        if (file.delete()) {
-                            scope.launch {
+                        scope.launch {
+                            try {
+                                // Delete entry using OkHttp
+                                deleteJournalEntry(entryToDelete!!.id)
                                 snackbarHostState.showSnackbar("Entry deleted successfully")
-                                journalEntries = loadJournalEntries(context)
+                                journalEntries = loadJournalEntries(userId)
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar("Failed to delete entry: ${e.message}")
                             }
+                            entryToDelete = null
                         }
-                        entryToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) { Text("Delete") }
@@ -244,6 +260,7 @@ fun JournalEntryScreen(
     var content by remember { mutableStateOf(entry.content) }
     val scope = rememberCoroutineScope()
     val isNewEntry = entry.id.isEmpty()
+    val userId = viewModel.user.value?.uid ?: ""
 
     Scaffold(
         topBar = {
@@ -259,26 +276,44 @@ fun JournalEntryScreen(
                         onClick = {
                             if (title.isNotBlank() && content.isNotBlank()) {
                                 scope.launch {
-                                    val entryId = if (isNewEntry) {
-                                        "journal_${System.currentTimeMillis()}"
-                                    } else {
-                                        entry.id
+                                    try {
+                                        if (isNewEntry) {
+                                            // Insert new entry using OkHttp
+                                            insertJournalEntry(
+                                                userId = userId,
+                                                title = title,
+                                                content = content,
+                                                timestamp = System.currentTimeMillis()
+                                            )
+                                            viewModel.user.value?.uid?.let { uid ->
+                                                viewModel.addActivity(
+                                                    uid,
+                                                    "Journal",
+                                                    "Created a new journal entry"
+                                                )
+                                            }
+                                            snackbarHostState.showSnackbar("Entry saved successfully!")
+                                        } else {
+                                            // Update existing entry using OkHttp
+                                            updateJournalEntry(
+                                                id = entry.id,
+                                                title = title,
+                                                content = content,
+                                                timestamp = System.currentTimeMillis()
+                                            )
+                                            viewModel.user.value?.uid?.let { uid ->
+                                                viewModel.addActivity(
+                                                    uid,
+                                                    "Journal",
+                                                    "Updated a journal entry"
+                                                )
+                                            }
+                                            snackbarHostState.showSnackbar("Entry updated successfully!")
+                                        }
+                                        onEntrySaved()
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar("Failed to save entry: ${e.message}")
                                     }
-                                    saveJournalEntry(
-                                        context,
-                                        JournalEntry(entryId, title, content, System.currentTimeMillis())
-                                    )
-                                    viewModel.user.value?.uid?.let { uid ->
-                                        viewModel.addActivity(
-                                            uid,
-                                            "Journal",
-                                            if (isNewEntry) "Created a new journal entry" else "Updated a journal entry"
-                                        )
-                                    }
-                                    snackbarHostState.showSnackbar(
-                                        if (isNewEntry) "Entry saved successfully!" else "Entry updated successfully!"
-                                    )
-                                    onEntrySaved()
                                 }
                             } else {
                                 scope.launch {
@@ -367,35 +402,105 @@ fun JournalEntryScreen(
     }
 }
 
-private fun saveJournalEntry(context: Context, entry: JournalEntry) {
-    val directory = File(context.getExternalFilesDir(null), "journal")
-    if (!directory.exists()) directory.mkdirs()
+// Constants for Supabase API
+private const val SUPABASE_URL = "https://ysavghvmswenmddlnshr.supabase.co/rest/v1"
+private const val SUPABASE_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzYXZnaHZtc3dlbm1kZGxuc2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI5OTY4MzIsImV4cCI6MjA1ODU3MjgzMn0.GCQ0xl7wJKI_YB8d3PP1jBDcs-aRJLRLjk9-NdB1_bs"
 
-    val file = File(directory, "${entry.id}.txt")
-    file.writeText("${entry.title}\n${entry.content}\n${entry.timestamp}")
+// Load journal entries using OkHttp
+private suspend fun loadJournalEntries(userId: String): List<JournalEntry> {
+    return withContext(Dispatchers.IO) {
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder()
+                .url("$SUPABASE_URL/journal_entries?user_id=eq.$userId")
+                .header("apikey", SUPABASE_API_KEY)
+                .header("Authorization", "Bearer $SUPABASE_API_KEY")
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) throw IOException("Failed to load entries: ${response.code}")
+
+            val json = response.body?.string() ?: return@withContext emptyList()
+            val jsonArray = JSONArray(json)
+            val entries = mutableListOf<JournalEntry>()
+            for (i in 0 until jsonArray.length()) {
+                val jsonObject = jsonArray.getJSONObject(i)
+                entries.add(
+                    JournalEntry(
+                        id = jsonObject.getString("id"),
+                        user_id = jsonObject.getString("user_id"),
+                        title = jsonObject.getString("title"),
+                        content = jsonObject.getString("content"),
+                        timestamp = jsonObject.getLong("timestamp")
+                    )
+                )
+            }
+            entries.sortedByDescending { it.timestamp }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }
 
-private fun loadJournalEntries(context: Context): List<JournalEntry> {
-    val directory = File(context.getExternalFilesDir(null), "journal")
-    if (!directory.exists()) return emptyList()
-
-    return directory.listFiles()
-        ?.filter { it.isFile && it.name.endsWith(".txt") }
-        ?.mapNotNull { file ->
-            try {
-                val lines = file.readLines()
-                if (lines.size >= 3) {
-                    val title = lines[0]
-                    val content = lines[1]
-                    val timestamp = lines[2].toLongOrNull() ?: return@mapNotNull null
-                    JournalEntry(file.nameWithoutExtension, title, content, timestamp)
-                } else {
-                    null
-                }
-            } catch (e: Exception) {
-                null
-            }
+// Insert a new journal entry using OkHttp
+private suspend fun insertJournalEntry(userId: String, title: String, content: String, timestamp: Long) {
+    withContext(Dispatchers.IO) {
+        val client = OkHttpClient()
+        val jsonObject = JSONObject().apply {
+            put("user_id", userId)
+            put("title", title)
+            put("content", content)
+            put("timestamp", timestamp)
         }
-        ?.sortedByDescending { it.timestamp }
-        ?: emptyList()
+        val requestBody = jsonObject.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("$SUPABASE_URL/journal_entries")
+            .header("apikey", SUPABASE_API_KEY)
+            .header("Authorization", "Bearer $SUPABASE_API_KEY")
+            .header("Content-Type", "application/json")
+            .post(requestBody)
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) throw IOException("Failed to insert entry: ${response.code}")
+    }
+}
+
+// Update an existing journal entry using OkHttp
+private suspend fun updateJournalEntry(id: String, title: String, content: String, timestamp: Long) {
+    withContext(Dispatchers.IO) {
+        val client = OkHttpClient()
+        val jsonObject = JSONObject().apply {
+            put("title", title)
+            put("content", content)
+            put("timestamp", timestamp)
+        }
+        val requestBody = jsonObject.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("$SUPABASE_URL/journal_entries?id=eq.$id")
+            .header("apikey", SUPABASE_API_KEY)
+            .header("Authorization", "Bearer $SUPABASE_API_KEY")
+            .header("Content-Type", "application/json")
+            .patch(requestBody)
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) throw IOException("Failed to update entry: ${response.code}")
+    }
+}
+
+// Delete a journal entry using OkHttp
+private suspend fun deleteJournalEntry(id: String) {
+    withContext(Dispatchers.IO) {
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url("$SUPABASE_URL/journal_entries?id=eq.$id")
+            .header("apikey", SUPABASE_API_KEY)
+            .header("Authorization", "Bearer $SUPABASE_API_KEY")
+            .delete()
+            .build()
+
+        val response = client.newCall(request).execute()
+        if (!response.isSuccessful) throw IOException("Failed to delete entry: ${response.code}")
+    }
 }
