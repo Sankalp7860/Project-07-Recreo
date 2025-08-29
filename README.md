@@ -66,7 +66,7 @@ The application is architected with a modern, scalable approach, utilizing Supab
     </td>
     <td align="center" style="padding:10px;">
       <b>Admin Panel</b><br/><br/> 
-      <img src="./public/13.png" alt="Admin Panel" width="250"/>
+      <img src="./public/13.PNG" alt="Admin Panel" width="250"/>
     </td>
   </tr>
 </table>
